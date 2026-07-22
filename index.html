@@ -84,45 +84,64 @@
     <!-- JavaScript logic to fetch data -->
     <script>
         document.addEventListener("DOMContentLoaded", async () => {
-            // Read ?id=UUID from URL
             const urlParams = new URLSearchParams(window.location.search);
             const uuid = urlParams.get('id');
 
+            // 1. Check if UUID exists in URL
             if (!uuid) {
+                console.warn("No ID parameter found in URL.");
                 showState('invalid');
                 return;
             }
 
             try {
+                // 2. Fetch staff record from serverless function
                 const response = await fetch(`/api/verify?id=${uuid}`);
                 const result = await response.json();
 
-                if (response.ok && result.found) {
+                console.log("API Response:", result);
+
+                // 3. Render staff record if found
+                if (response.ok && result.found && result.staff) {
                     const staff = result.staff;
-                    // Populate UI
-                    document.getElementById('staff-photo').src = `/photos/${staff.photo_r2_key}`;
-                    document.getElementById('staff-cadre').innerText = staff.cadre;
-                    document.getElementById('staff-name').innerText = staff.full_name;
-                    document.getElementById('staff-title').innerText = staff.designation;
-                    document.getElementById('staff-id').innerText = staff.staff_id;
-                    document.getElementById('staff-dept').innerText = staff.department;
-                    document.getElementById('staff-issued').innerText = staff.issued_date;
-                    
+
+                    // Safe text population (prevents crashes if an element is missing)
+                    setElementText('staff-cadre', staff.cadre || 'STAFF');
+                    setElementText('staff-name', staff.full_name || 'N/A');
+                    setElementText('staff-title', staff.designation || 'N/A');
+                    setElementText('staff-id', staff.staff_id || 'N/A');
+                    setElementText('staff-dept', staff.department || 'N/A');
+                    setElementText('staff-issued', staff.issued_date || 'N/A');
+
+                    // Load Photo from R2 Route
+                    const photoEl = document.getElementById('staff-photo');
+                    if (photoEl && staff.photo_r2_key) {
+                        photoEl.src = `/photos/${staff.photo_r2_key}`;
+                    }
+
                     showState('valid');
                 } else {
+                    console.warn("Staff record not found or inactive.");
                     showState('invalid');
                 }
             } catch (err) {
+                console.error("Frontend Render Error:", err);
                 showState('invalid');
             }
         });
 
+        // Helper functions
+        function setElementText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = value;
+        }
+
         function showState(state) {
-            document.getElementById('state-loading').classList.add('hidden');
-            document.getElementById('state-valid').classList.add('hidden');
-            document.getElementById('state-invalid').classList.add('hidden');
-            
-            document.getElementById(`state-${state}`).classList.remove('hidden');
+            document.getElementById('state-loading')?.classList.add('hidden');
+            document.getElementById('state-valid')?.classList.add('hidden');
+            document.getElementById('state-invalid')?.classList.add('hidden');
+
+            document.getElementById(`state-${state}`)?.classList.remove('hidden');
         }
     </script>
 </body>

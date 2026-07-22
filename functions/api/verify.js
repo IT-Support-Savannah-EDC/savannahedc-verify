@@ -1,10 +1,7 @@
-// This function runs automatically whenever someone visits verify.savannahedc.com/api/verify?id=YOUR_UUID
 export async function onRequestGet(context) {
-    // 1. Get the 'id' parameter from the URL query string
     const { searchParams } = new URL(context.request.url);
     const staffUuid = searchParams.get('id');
 
-    // 2. Check if an ID was actually provided
     if (!staffUuid) {
         return new Response(JSON.stringify({ found: false, error: "Missing ID" }), {
             status: 400,
@@ -13,12 +10,14 @@ export async function onRequestGet(context) {
     }
 
     try {
-        // 3. Search the Cloudflare D1 database for the matching staff UUID
-        // 'DB' refers to your Cloudflare D1 binding
+        // Check if DB binding exists
+        if (!context.env.DB) {
+            throw new Error("D1 Binding 'DB' is missing in Cloudflare Pages Settings.");
+        }
+
         const statement = context.env.DB.prepare("SELECT * FROM staff_directory WHERE uuid = ?");
         const staff = await statement.bind(staffUuid).first();
 
-        // 4. If no staff member matches that ID
         if (!staff) {
             return new Response(JSON.stringify({ found: false }), {
                 status: 404,
@@ -26,14 +25,18 @@ export async function onRequestGet(context) {
             });
         }
 
-        // 5. Return the staff details as JSON
         return new Response(JSON.stringify({ found: true, staff: staff }), {
             status: 200,
             headers: { "Content-Type": "application/json" }
         });
 
     } catch (error) {
-        return new Response(JSON.stringify({ found: false, error: "Database error" }), {
+        // Expose the exact error details for debugging
+        return new Response(JSON.stringify({ 
+            found: false, 
+            error_message: error.message,
+            error_type: error.name
+        }), {
             status: 500,
             headers: { "Content-Type": "application/json" }
         });

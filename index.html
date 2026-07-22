@@ -100,7 +100,7 @@
                 if (response.ok && result.found) {
                     const staff = result.staff;
                     // Populate UI
-                    document.getElementById('staff-photo').src = `https://pub-your-r2-id.r2.dev/${staff.photo_r2_key}`; // Replace with your R2 URL
+                    document.getElementById('staff-photo').src = `/photos/${staff.photo_r2_key}`;
                     document.getElementById('staff-cadre').innerText = staff.cadre;
                     document.getElementById('staff-name').innerText = staff.full_name;
                     document.getElementById('staff-title').innerText = staff.designation;
